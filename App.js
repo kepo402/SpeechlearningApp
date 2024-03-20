@@ -131,13 +131,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start', // Align items at the top
     backgroundColor: '#f4f4f4',
   },
   header: {
     width: '100%',
     backgroundColor: 'blue',
     paddingVertical: 20,
+    // Remove marginTop or set it to 0
+    marginTop: 0, 
   },
   title: {
     color: 'white',
