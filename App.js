@@ -9,13 +9,33 @@ export default function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState(null);
   const [recordings, setRecordings] = useState([]);
-  
+  const [timer, setTimer] = useState({ minutes: 0, seconds: 0 });
 
   const referenceWord = "Hello, shey àtí bẹ̀rẹ̀ ni?";
 
   useEffect(() => {
     Audio.requestPermissionsAsync();
   }, []);
+
+  useEffect(() => {
+    let interval;
+    if (isRecording) {
+      interval = setInterval(() => {
+        setTimer(prevTimer => {
+          const seconds = prevTimer.seconds + 1;
+          const minutes = Math.floor(seconds / 60);
+          return {
+            minutes: minutes,
+            seconds: seconds % 60
+          };
+        });
+      }, 1000);
+    } else {
+      clearInterval(interval);
+      setTimer({ minutes: 0, seconds: 0 });
+    }
+    return () => clearInterval(interval);
+  }, [isRecording]);
 
   const startRecording = async () => {
     try {
@@ -50,7 +70,7 @@ export default function App() {
       console.error('recordings is not an array:', recordings);
     }
   };
-  // Function to play the reference audio
+
   const playReferenceAudio = async () => {
     const soundObject = new Audio.Sound();
     try {
@@ -68,8 +88,10 @@ export default function App() {
       </View>
       <View style={styles.reference}>
         <Text style={styles.referenceText}>Reference Word: {referenceWord}</Text>
-        {/* Add a button to play the reference audio */}
         <Button title="Play Reference" onPress={playReferenceAudio} />
+      </View>
+      <View style={styles.timerContainer}>
+        <Text style={styles.timerText}>{`${String(timer.minutes).padStart(2, '0')}:${String(timer.seconds).padStart(2, '0')}`}</Text>
       </View>
       <ScrollView style={styles.recordings}>
         {recordings.map((uri, index) => (
@@ -90,13 +112,11 @@ export default function App() {
 }
 
 function AudioPlayer(props) {
-  const { uri } = props; // Destructuring the uri from props
+  const { uri } = props;
   const [isPlaying, setIsPlaying] = useState(false);
 
   const togglePlayback = () => {
-    // Logic to toggle playback
     setIsPlaying(!isPlaying);
-    // Implement your audio playback logic here
   };
 
   return (
@@ -106,6 +126,7 @@ function AudioPlayer(props) {
     </TouchableOpacity>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -129,6 +150,12 @@ const styles = StyleSheet.create({
   },
   referenceText: {
     fontSize: 16,
+  },
+  timerContainer: {
+    marginTop: 10,
+  },
+  timerText: {
+    fontSize: 18,
   },
   recordings: {
     maxHeight: 200,
