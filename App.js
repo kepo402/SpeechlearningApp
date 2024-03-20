@@ -8,9 +8,9 @@ const referenceAudioFile = require('./assets/reference.mp3');
 export default function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState(null);
+  const [recordTimer, setRecordTimer] = useState({ minutes: 0, seconds: 0 });
+  const [referenceTimer, setReferenceTimer] = useState({ minutes: 0, seconds: 0 });
   const [recordings, setRecordings] = useState([]);
-  const [timer, setTimer] = useState({ minutes: 0, seconds: 0 });
-
   const referenceWord = "Hello, shey àtí bẹ̀rẹ̀ ni?";
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function App() {
     let interval;
     if (isRecording) {
       interval = setInterval(() => {
-        setTimer(prevTimer => {
+        setRecordTimer(prevTimer => {
           const seconds = prevTimer.seconds + 1;
           const minutes = Math.floor(seconds / 60);
           return {
@@ -32,7 +32,7 @@ export default function App() {
       }, 1000);
     } else {
       clearInterval(interval);
-      setTimer({ minutes: 0, seconds: 0 });
+      setRecordTimer({ minutes: 0, seconds: 0 });
     }
     return () => clearInterval(interval);
   }, [isRecording]);
@@ -60,22 +60,29 @@ export default function App() {
     }
   };
 
-  const deleteRecording = (index) => {
-    // Check if recordings is an array before deleting
-    if (Array.isArray(recordings)) {
-      const newRecordings = [...recordings];
-      newRecordings.splice(index, 1);
-      setRecordings(newRecordings);
-    } else {
-      console.error('recordings is not an array:', recordings);
-    }
-  };
-
   const playReferenceAudio = async () => {
     const soundObject = new Audio.Sound();
     try {
       await soundObject.loadAsync(referenceAudioFile);
       await soundObject.playAsync();
+      setReferenceTimer({ minutes: 0, seconds: 0 });
+      let interval = setInterval(() => {
+        setReferenceTimer(prevTimer => {
+          const seconds = prevTimer.seconds + 1;
+          const minutes = Math.floor(seconds / 60);
+          return {
+            minutes: minutes,
+            seconds: seconds % 60
+          };
+        });
+      }, 1000);
+      soundObject.setOnPlaybackStatusUpdate(status => {
+        if (!status.isPlaying) {
+          clearInterval(interval);
+          // Reset reference timer
+          setReferenceTimer({ minutes: 0, seconds: 0 });
+        }
+      });
     } catch (error) {
       console.error('Failed to play reference audio', error);
     }
@@ -86,12 +93,19 @@ export default function App() {
       <View style={styles.header}>
         <Text style={styles.title}>Yoruba Pronunciation</Text>
       </View>
-      <View style={styles.reference}>
-        <Text style={styles.referenceText}>Reference Word: {referenceWord}</Text>
-        <Button title="Play Reference" onPress={playReferenceAudio} />
-      </View>
-      <View style={styles.timerContainer}>
-        <Text style={styles.timerText}>{`${String(timer.minutes).padStart(2, '0')}:${String(timer.seconds).padStart(2, '0')}`}</Text>
+      <View style={styles.buttonsContainer}>
+        <View style={styles.buttonWrapper}>
+          <Text style={styles.referenceText}>Reference Word: {referenceWord}</Text>
+          <Text style={styles.timerText}>{`${String(referenceTimer.minutes).padStart(2, '0')}:${String(referenceTimer.seconds).padStart(2, '0')}`}</Text>
+          <Button title="Play Reference" onPress={playReferenceAudio} />
+        </View>
+        <View style={styles.buttonWrapper}>
+          <Text style={styles.timerText}>{`${String(recordTimer.minutes).padStart(2, '0')}:${String(recordTimer.seconds).padStart(2, '0')}`}</Text>
+          <Button
+            title={isRecording ? 'Stop' : 'Record'}
+            onPress={isRecording ? stopRecording : startRecording}
+          />
+        </View>
       </View>
       <ScrollView style={styles.recordings}>
         {recordings.map((uri, index) => (
@@ -103,10 +117,6 @@ export default function App() {
           </View>
         ))}
       </ScrollView>
-      <Button
-        title={isRecording ? 'Stop' : 'Record'}
-        onPress={isRecording ? stopRecording : startRecording}
-      />
     </View>
   );
 }
@@ -131,15 +141,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start', // Align items at the top
+    justifyContent: 'flex-start',
     backgroundColor: '#f4f4f4',
   },
   header: {
     width: '100%',
     backgroundColor: 'blue',
     paddingVertical: 20,
-    // Remove marginTop or set it to 0
-    marginTop: 0, 
+    marginTop: 20, 
   },
   title: {
     color: 'white',
@@ -147,14 +156,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  reference: {
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    width: '100%',
     marginTop: 20,
+  },
+  buttonWrapper: {
+    alignItems: 'center',
   },
   referenceText: {
     fontSize: 16,
-  },
-  timerContainer: {
-    marginTop: 10,
   },
   timerText: {
     fontSize: 18,
