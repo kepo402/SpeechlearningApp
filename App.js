@@ -8,6 +8,7 @@ const referenceAudioFile = require('./assets/reference.mp3');
 export default function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordTimer, setRecordTimer] = useState({ minutes: 0, seconds: 0 });
+  const [referenceTimer, setReferenceTimer] = useState({ minutes: 0, seconds: 0 });
   const [recording, setRecording] = useState(null);
   const [recordings, setRecordings] = useState([]);
 
@@ -36,6 +37,21 @@ export default function App() {
     }
     return () => clearInterval(interval);
   }, [isRecording]);
+
+  useEffect(() => {
+    let interval;
+    interval = setInterval(() => {
+      setReferenceTimer(prevTimer => {
+        const seconds = prevTimer.seconds + 1;
+        const minutes = Math.floor(seconds / 60);
+        return {
+          minutes: minutes,
+          seconds: seconds % 60
+        };
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const startRecording = async () => {
     try {
@@ -94,7 +110,7 @@ export default function App() {
       <View style={styles.buttonsContainer}>
         <View style={styles.buttonWrapper}>
           <Text style={styles.referenceText}>Reference Word: {referenceWord}</Text>
-          <Text style={styles.timerText}>{`${String(recordTimer.minutes).padStart(2, '0')}:${String(recordTimer.seconds).padStart(2, '0')}`}</Text>
+          <Text style={styles.timerText}>{`${String(referenceTimer.minutes).padStart(2, '0')}:${String(referenceTimer.seconds).padStart(2, '0')}`}</Text>
           <Button title="Play Reference" onPress={playReferenceAudio} />
         </View>
         <View style={styles.buttonWrapper}>
