@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Button, TouchableOpacity, ScrollView } from 'react-native';
 import { Audio } from 'expo-av';
+import { Ionicons } from '@expo/vector-icons';
 
 // Import the reference MP3 file
 const referenceAudioFile = require('./assets/reference.mp3');
@@ -12,6 +13,7 @@ export default function App() {
   const [recording, setRecording] = useState(null);
   const [recordings, setRecordings] = useState([]);
   const [isPlayingReference, setIsPlayingReference] = useState(false);
+  const [isPlayingRecording, setIsPlayingRecording] = useState(null);
 
   const referenceWord = "Hello, shey àtí bẹ̀rẹ̀ ni?";
 
@@ -104,13 +106,24 @@ export default function App() {
     }
   };
 
-  const playUserRecording = async uri => {
-    const soundObject = new Audio.Sound();
+  const playUserRecording = async (uri, index) => {
+    let soundObject = new Audio.Sound();
     try {
       await soundObject.loadAsync({ uri });
-      await soundObject.playAsync();
+      if (isPlayingRecording === index) {
+        await soundObject.pauseAsync(); // Pause the playback
+        setIsPlayingRecording(null);
+      } else {
+        await soundObject.playAsync();
+        setIsPlayingRecording(index);
+        soundObject.setOnPlaybackStatusUpdate(status => {
+          if (status.didJustFinish) {
+            setIsPlayingRecording(null);
+          }
+        });
+      }
     } catch (error) {
-      console.error('Failed to play user recording', error);
+      console.error('Failed to play or pause user recording', error);
     }
   };
 
@@ -136,8 +149,8 @@ export default function App() {
       <ScrollView style={styles.recordings}>
         {recordings.map((uri, index) => (
           <View key={index} style={styles.recordingItem}>
-            <TouchableOpacity onPress={() => playUserRecording(uri)} style={styles.audioItem}>
-              <Text>{`Recording ${index + 1}`}</Text>
+            <TouchableOpacity onPress={() => playUserRecording(uri, index)} style={styles.audioItem}>
+              <Ionicons name={isPlayingRecording === index ? 'pause-circle-outline' : 'play-circle-outline'} size={24} color="black" />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => deleteRecording(index)} style={[styles.deleteButton, { backgroundColor: 'blue' }]}>
               <Text style={styles.deleteText}>Delete</Text>
@@ -193,7 +206,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical:10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },
