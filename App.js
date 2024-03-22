@@ -11,6 +11,7 @@ export default function App() {
   const [referenceTimer, setReferenceTimer] = useState({ minutes: 0, seconds: 0 });
   const [recording, setRecording] = useState(null);
   const [recordings, setRecordings] = useState([]);
+  const [isPlayingReference, setIsPlayingReference] = useState(false);
 
   const referenceWord = "Hello, shey àtí bẹ̀rẹ̀ ni?";
 
@@ -40,18 +41,23 @@ export default function App() {
 
   useEffect(() => {
     let interval;
-    interval = setInterval(() => {
-      setReferenceTimer(prevTimer => {
-        const seconds = prevTimer.seconds + 1;
-        const minutes = Math.floor(seconds / 60);
-        return {
-          minutes: minutes,
-          seconds: seconds % 60
-        };
-      });
-    }, 1000);
+    if (isPlayingReference) {
+      interval = setInterval(() => {
+        setReferenceTimer(prevTimer => {
+          const seconds = prevTimer.seconds + 1;
+          const minutes = Math.floor(seconds / 60);
+          return {
+            minutes: minutes,
+            seconds: seconds % 60
+          };
+        });
+      }, 1000);
+    } else {
+      clearInterval(interval);
+      setReferenceTimer({ minutes: 0, seconds: 0 });
+    }
     return () => clearInterval(interval);
-  }, []);
+  }, [isPlayingReference]);
 
   const startRecording = async () => {
     try {
@@ -83,10 +89,16 @@ export default function App() {
   };
 
   const playReferenceAudio = async () => {
+    setIsPlayingReference(true);
     const soundObject = new Audio.Sound();
     try {
       await soundObject.loadAsync(referenceAudioFile);
       await soundObject.playAsync();
+      soundObject.setOnPlaybackStatusUpdate(status => {
+        if (status.didJustFinish) {
+          setIsPlayingReference(false);
+        }
+      });
     } catch (error) {
       console.error('Failed to play reference audio', error);
     }
