@@ -15,6 +15,8 @@ export default function App() {
   const [isPlayingRecording, setIsPlayingRecording] = useState(null);
   const [playbackInstance, setPlaybackInstance] = useState(null);
   const [playbackTimer, setPlaybackTimer] = useState({ minutes: 0, seconds: 0 }); // Timer for audio playback
+  const [referencePlaybackInstance, setReferencePlaybackInstance] = useState(null);
+  const [referencePlaybackTimer, setReferencePlaybackTimer] = useState({ minutes: 0, seconds: 0 }); // Timer for reference audio playback
 
   const referenceWord = "Hello, shey àtí bẹ̀rẹ̀ ni?";
 
@@ -63,6 +65,27 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isPlayingRecording, playbackInstance]);
 
+  useEffect(() => {
+    let interval;
+    if (isPlayingReference && referencePlaybackInstance !== null) {
+      interval = setInterval(async () => {
+        const status = await referencePlaybackInstance.getStatusAsync();
+        if (status.isLoaded) {
+          const seconds = Math.floor(status.positionMillis / 1000);
+          const minutes = Math.floor(seconds / 60);
+          setReferencePlaybackTimer({
+            minutes: minutes,
+            seconds: seconds % 60
+          });
+        }
+      }, 1000);
+    } else {
+      clearInterval(interval);
+      setReferencePlaybackTimer({ minutes: 0, seconds: 0 });
+    }
+    return () => clearInterval(interval);
+  }, [isPlayingReference, referencePlaybackInstance]);
+
   const startRecording = async () => {
     try {
       const newRecording = new Audio.Recording();
@@ -97,18 +120,27 @@ export default function App() {
     setIsPlayingReference(true);
     const soundObject = new Audio.Sound();
     try {
-      await soundObject.loadAsync(referenceAudioFile);
+      await soundObject.loadAsync(referenceAudioFile, {}, false);
       await soundObject.playAsync();
+      setReferencePlaybackInstance(soundObject);
       soundObject.setOnPlaybackStatusUpdate(status => {
+        if (status.isPlaying) {
+          const seconds = Math.floor(status.positionMillis / 1000);
+          const minutes = Math.floor(seconds / 60);
+          setReferencePlaybackTimer({
+            minutes: minutes,
+            seconds: seconds % 60
+          });
+        }
         if (status.didJustFinish) {
           setIsPlayingReference(false);
+          setReferencePlaybackTimer({ minutes: 0, seconds: 0 }); // Reset timer when finished
         }
       });
     } catch (error) {
       console.error('Failed to play reference audio', error);
     }
   };
-
   const playUserRecording = async (uri, index) => {
     if (isPlayingRecording === index) {
       try {
@@ -143,10 +175,11 @@ export default function App() {
         <Text style={styles.title}>Yoruba Pronunciation</Text>
       </View>
       <View style={styles.buttonsContainer}>
-        <View style={styles.buttonWrapper}>
-          <Text style={styles.referenceText}>Reference Word: {referenceWord}</Text>
-          <Button title="Play Reference" onPress={playReferenceAudio} />
-        </View>
+      <View style={styles.buttonWrapper}>
+     <Text style={styles.referenceText}>Reference Word: {referenceWord}</Text>
+     <Text style={styles.timerText}>{`${String(referencePlaybackTimer.minutes).padStart(2, '0')}:${String(referencePlaybackTimer.seconds).padStart(2, '0')}`}</Text>
+     <Button title="Play Reference" onPress={playReferenceAudio} />
+     </View>
         <View style={styles.buttonWrapper}>
           <Text style={styles.timerText}>{`${String(recordTimer.minutes).padStart(2, '0')}:${String(recordTimer.seconds).padStart(2, '0')}`}</Text>
           <Button
