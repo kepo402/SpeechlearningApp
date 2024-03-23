@@ -2,9 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Button, TouchableOpacity, ScrollView } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
+import * as Font from 'expo-font';
 
 // Import the reference MP3 file
 const referenceAudioFile = require('./assets/reference.mp3');
+
+// Load custom fonts
+const customFonts = {
+  'MontserratAlternates-Regular': require('./assets/fonts/MontserratAlternates-Regular.ttf'),
+  'MontserratAlternates-Bold': require('./assets/fonts/MontserratAlternates-Bold.ttf'),
+};
 
 export default function App() {
   const [isRecording, setIsRecording] = useState(false);
@@ -14,11 +21,18 @@ export default function App() {
   const [isPlayingReference, setIsPlayingReference] = useState(false);
   const [isPlayingRecording, setIsPlayingRecording] = useState(null);
   const [playbackInstance, setPlaybackInstance] = useState(null);
-  const [playbackTimer, setPlaybackTimer] = useState({ minutes: 0, seconds: 0 }); // Timer for audio playback
+  const [playbackTimer, setPlaybackTimer] = useState({ minutes: 0, seconds: 0 });
   const [referencePlaybackInstance, setReferencePlaybackInstance] = useState(null);
-  const [referencePlaybackTimer, setReferencePlaybackTimer] = useState({ minutes: 0, seconds: 0 }); // Timer for reference audio playback
+  const [referencePlaybackTimer, setReferencePlaybackTimer] = useState({ minutes: 0, seconds: 0 });
 
   const referenceWord = "Hello, shey àtí bẹ̀rẹ̀ ni?";
+
+  useEffect(() => {
+    async function loadFonts() {
+      await Font.loadAsync(customFonts);
+    }
+    loadFonts();
+  }, []);
 
   useEffect(() => {
     Audio.requestPermissionsAsync();
@@ -141,6 +155,7 @@ export default function App() {
       console.error('Failed to play reference audio', error);
     }
   };
+
   const playUserRecording = async (uri, index) => {
     if (isPlayingRecording === index) {
       try {
@@ -175,11 +190,11 @@ export default function App() {
         <Text style={styles.title}>Yoruba Pronunciation</Text>
       </View>
       <View style={styles.buttonsContainer}>
-      <View style={styles.buttonWrapper}>
-     <Text style={styles.referenceText}>Reference Word: {referenceWord}</Text>
-     <Text style={styles.timerText}>{`${String(referencePlaybackTimer.minutes).padStart(2, '0')}:${String(referencePlaybackTimer.seconds).padStart(2, '0')}`}</Text>
-     <Button title="Play Reference" onPress={playReferenceAudio} />
-     </View>
+        <View style={styles.buttonWrapper}>
+          <Text style={styles.referenceText}>Reference Word: {referenceWord}</Text>
+          <Text style={styles.timerText}>{`${String(referencePlaybackTimer.minutes).padStart(2, '0')}:${String(referencePlaybackTimer.seconds).padStart(2, '0')}`}</Text>
+          <Button title="Play Reference" onPress={playReferenceAudio} />
+        </View>
         <View style={styles.buttonWrapper}>
           <Text style={styles.timerText}>{`${String(recordTimer.minutes).padStart(2, '0')}:${String(recordTimer.seconds).padStart(2, '0')}`}</Text>
           <Button
@@ -222,6 +237,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   title: {
+    fontFamily: 'MontserratAlternates-Bold',
     color: 'white',
     fontSize: 20,
     fontWeight: 'bold',
@@ -238,9 +254,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   referenceText: {
+    fontFamily: 'MontserratAlternates-Regular',
     fontSize: 16,
   },
   timerText: {
+    fontFamily: 'MontserratAlternates-Regular',
     fontSize: 18,
   },
   recordings: {
