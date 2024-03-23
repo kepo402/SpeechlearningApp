@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Button, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Button, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import * as Font from 'expo-font';
@@ -199,6 +199,7 @@ export default function App() {
       <View style={styles.header}>
         <Text style={styles.title}>Yoruba Pronunciation</Text>
       </View>
+      <Image source={require('./assets/679px-Yoruba_cultural_symbol.jpg')} style={styles.image} />
       <View style={styles.buttonsContainer}>
         <View style={styles.buttonWrapper}>
           <Text style={styles.referenceText}>Reference Word: {referenceWord}</Text>
@@ -253,6 +254,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  image: {
+    width: 200, // Adjust width as needed
+    height: 200, // Adjust height as needed
+    resizeMode: 'contain', // Adjust resizeMode as needed
+    marginBottom: 20,
   },
   buttonsContainer: {
     flexDirection: 'row',
