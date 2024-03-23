@@ -13,6 +13,16 @@ const customFonts = {
   'MontserratAlternates-Bold': require('./assets/fonts/MontserratAlternates-Bold.ttf'),
 };
 
+const Footer = () => {
+  return (
+    <View style={styles.footer}>
+      <Text style={styles.footerText}>About Us</Text>
+      <Text style={styles.footerText}>Contact</Text>
+      <Text style={styles.footerText}>C ledeyoruba</Text>
+    </View>
+  );
+};
+
 export default function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordTimer, setRecordTimer] = useState({ minutes: 0, seconds: 0 });
@@ -219,6 +229,7 @@ export default function App() {
           </View>
         ))}
       </ScrollView>
+      <Footer />
     </View>
   );
 }
@@ -290,5 +301,20 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     color: 'white',
+  },
+  footer: {
+    backgroundColor: 'black',
+    paddingVertical: 60,
+    paddingHorizontal: 10,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    position: 'absolute',
+    bottom: 0,
+  },
+  footerText: {
+    color: 'white',
+    fontFamily: 'MontserratAlternates-Regular',
+    fontSize: 16,
   },
 });
