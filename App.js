@@ -9,11 +9,12 @@ const referenceAudioFile = require('./assets/reference.mp3');
 export default function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordTimer, setRecordTimer] = useState({ minutes: 0, seconds: 0 });
-  const [referenceTimer, setReferenceTimer] = useState({ minutes: 0, seconds: 0 });
   const [recording, setRecording] = useState(null);
   const [recordings, setRecordings] = useState([]);
   const [isPlayingReference, setIsPlayingReference] = useState(false);
   const [isPlayingRecording, setIsPlayingRecording] = useState(null);
+  const [playbackInstance, setPlaybackInstance] = useState(null);
+  const [playbackTimer, setPlaybackTimer] = useState({ minutes: 0, seconds: 0 }); // Timer for audio playback
 
   const referenceWord = "Hello, shey àtí bẹ̀rẹ̀ ni?";
 
@@ -43,23 +44,24 @@ export default function App() {
 
   useEffect(() => {
     let interval;
-    if (isPlayingReference) {
-      interval = setInterval(() => {
-        setReferenceTimer(prevTimer => {
-          const seconds = prevTimer.seconds + 1;
+    if (isPlayingRecording !== null && playbackInstance !== null) {
+      interval = setInterval(async () => {
+        const status = await playbackInstance.getStatusAsync();
+        if (status.isLoaded) {
+          const seconds = Math.floor(status.positionMillis / 1000);
           const minutes = Math.floor(seconds / 60);
-          return {
+          setPlaybackTimer({
             minutes: minutes,
             seconds: seconds % 60
-          };
-        });
+          });
+        }
       }, 1000);
     } else {
       clearInterval(interval);
-      setReferenceTimer({ minutes: 0, seconds: 0 });
+      setPlaybackTimer({ minutes: 0, seconds: 0 });
     }
     return () => clearInterval(interval);
-  }, [isPlayingReference]);
+  }, [isPlayingRecording, playbackInstance]);
 
   const startRecording = async () => {
     try {
@@ -68,6 +70,7 @@ export default function App() {
       await newRecording.startAsync();
       setRecording(newRecording);
       setIsRecording(true);
+      setRecordTimer({ minutes: 0, seconds: 0 }); // Reset record timer
     } catch (error) {
       console.error('Failed to start recording', error);
     }
@@ -78,7 +81,7 @@ export default function App() {
       await recording.stopAndUnloadAsync();
       setIsRecording(false);
       const uri = recording.getURI();
-      setRecordings([...recordings, uri]);
+      setRecordings([...recordings, { uri, duration: recordTimer }]);
     } catch (error) {
       console.error('Failed to stop recording', error);
     }
@@ -107,23 +110,30 @@ export default function App() {
   };
 
   const playUserRecording = async (uri, index) => {
-    let soundObject = new Audio.Sound();
-    try {
-      await soundObject.loadAsync({ uri });
-      if (isPlayingRecording === index) {
-        await soundObject.pauseAsync(); // Pause the playback
+    if (isPlayingRecording === index) {
+      try {
+        await playbackInstance.pauseAsync();
         setIsPlayingRecording(null);
-      } else {
+        setPlaybackInstance(null);
+      } catch (error) {
+        console.error('Failed to pause recording', error);
+      }
+    } else {
+      const soundObject = new Audio.Sound();
+      try {
+        await soundObject.loadAsync({ uri });
         await soundObject.playAsync();
         setIsPlayingRecording(index);
+        setPlaybackInstance(soundObject);
         soundObject.setOnPlaybackStatusUpdate(status => {
           if (status.didJustFinish) {
             setIsPlayingRecording(null);
+            setPlaybackInstance(null);
           }
         });
+      } catch (error) {
+        console.error('Failed to play user recording', error);
       }
-    } catch (error) {
-      console.error('Failed to play or pause user recording', error);
     }
   };
 
@@ -135,7 +145,6 @@ export default function App() {
       <View style={styles.buttonsContainer}>
         <View style={styles.buttonWrapper}>
           <Text style={styles.referenceText}>Reference Word: {referenceWord}</Text>
-          <Text style={styles.timerText}>{`${String(referenceTimer.minutes).padStart(2, '0')}:${String(referenceTimer.seconds).padStart(2, '0')}`}</Text>
           <Button title="Play Reference" onPress={playReferenceAudio} />
         </View>
         <View style={styles.buttonWrapper}>
@@ -147,11 +156,15 @@ export default function App() {
         </View>
       </View>
       <ScrollView style={styles.recordings}>
-        {recordings.map((uri, index) => (
+        {recordings.map((item, index) => (
           <View key={index} style={styles.recordingItem}>
-            <TouchableOpacity onPress={() => playUserRecording(uri, index)} style={styles.audioItem}>
+            <TouchableOpacity onPress={() => playUserRecording(item.uri, index)} style={styles.audioItem}>
               <Ionicons name={isPlayingRecording === index ? 'pause-circle-outline' : 'play-circle-outline'} size={24} color="black" />
             </TouchableOpacity>
+            <View style={styles.recordingInfo}>
+              <Text>{`Recording ${index + 1}`}</Text>
+              <Text>{`${String(playbackTimer.minutes).padStart(2, '0')}:${String(playbackTimer.seconds).padStart(2, '0')}`}</Text>
+            </View>
             <TouchableOpacity onPress={() => deleteRecording(index)} style={[styles.deleteButton, { backgroundColor: 'blue' }]}>
               <Text style={styles.deleteText}>Delete</Text>
             </TouchableOpacity>
@@ -206,12 +219,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical:10,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },
   audioItem: {
+    marginRight: 10,
+  },
+  recordingInfo: {
     flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   deleteButton: {
     marginLeft: 10,
