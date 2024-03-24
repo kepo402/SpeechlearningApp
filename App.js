@@ -3,6 +3,9 @@ import { StyleSheet, Text, View, Button, TouchableOpacity, ScrollView, Image } f
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import * as Font from 'expo-font';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import AboutScreen from './AboutScreen'; // Import the AboutScreen component
 
 // Import the reference MP3 file
 const referenceAudioFile = require('./assets/reference.mp3');
@@ -14,16 +17,24 @@ const customFonts = {
 };
 
 const Footer = () => {
+  const navigation = useNavigation();
+
+  const goToAbout = () => {
+    navigation.navigate('About');
+  };
+
   return (
     <View style={styles.footer}>
-      <Text style={styles.footerText}>About Us</Text>
+      <TouchableOpacity onPress={goToAbout}>
+        <Text style={styles.footerText}>About Us</Text>
+      </TouchableOpacity>
       <Text style={styles.footerText}>Contact</Text>
       <Text style={styles.footerText}>C ledeyoruba</Text>
     </View>
   );
 };
 
-export default function App() {
+const App = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordTimer, setRecordTimer] = useState({ minutes: 0, seconds: 0 });
   const [recording, setRecording] = useState(null);
@@ -233,6 +244,19 @@ export default function App() {
       <Footer />
     </View>
   );
+};
+
+const Stack = createStackNavigator();
+
+export default function MainApp() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Screen name="Home" component={App} />
+        <Stack.Screen name="About" component={AboutScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -325,3 +349,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
+     
